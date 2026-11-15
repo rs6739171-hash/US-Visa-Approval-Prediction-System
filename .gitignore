@@ -218,3 +218,44 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# ==============================================================================
+# MLOps Pipeline & Machine Learning Artifacts (US Visa Project)
+# ==============================================================================
+
+# Pipeline Execution Artifacts & Feature Store
+artifact/
+artifacts/
+
+# Application & Pipeline Logs
+logs/
+*.log
+
+# Serialized Model Objects & Preprocessors
+*.pkl
+*.dill
+*.joblib
+*.h5
+
+# Transformed NumPy Arrays
+*.npy
+*.npz
+
+# CatBoost Training Metadata & Logs
+catboost_info/
+**/catboost_info/
+
+# Environment Variables & Secrets (AWS / MongoDB Atlas)
+.env
+.env.*
+*.env
+
+# Operating System Temporary Files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+
+# IDE & Editor Settings
+.vscode/
+.idea/
+
