@@ -259,3 +259,4 @@ ehthumbs.db
 .vscode/
 .idea/
 
+artifact/*
