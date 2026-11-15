@@ -26,8 +26,3 @@ jinja2
 python-multipart
 -e .
 
-rs6739171_db_user
-
-52Yv4wMhuZs8zXFx
-
-mongodb+srv://<db_username>:52Yv4wMhuZs8zXFx@cluster0.zbtkqga.mongodb.net/
