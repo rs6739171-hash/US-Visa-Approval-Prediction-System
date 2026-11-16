@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>US Visa Approval Prediction System</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Custom Stylesheet -->
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+    <!-- Navigation Header -->
+    <nav class="navbar navbar-dark navbar-custom py-3">
+        <div class="container d-flex justify-content-between align-items-center">
+            <a class="navbar-brand d-flex align-items-center gap-2 fw-bold" href="/">
+                <span class="fs-4">🇺🇸</span>
+                <span>US Visa Approval Prediction</span>
+            </a>
+            <div class="d-flex align-items-center gap-3">
+                <a href="/train" class="btn btn-outline-light btn-sm rounded-pill px-3 fw-semibold">
+                    <i class="bi bi-gear-fill me-1"></i> Retrain Pipeline
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Header Description -->
+    <header class="header-section text-center">
+        <div class="container">
+            <h1 class="fw-bold mb-2 text-dark">Visa Status Classification Engine</h1>
+            <p class="text-secondary mb-0 max-w-600 mx-auto">
+                Predict whether an employment-based US visa petition will be <strong>Certified</strong> or <strong>Denied</strong> based on employer attributes, prevailing wages, and applicant credentials.
+            </p>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="container my-4">
+        <div class="row justify-content-center">
+            <div class="col-lg-10 col-xl-9">
+
+                <!-- Prediction Result Alert -->
+                {% if context or result %}
+                {% set outcome = context if context else result %}
+                <div class="result-container">
+                    {% if outcome == 'Certified' %}
+                    <div class="badge-certified">
+                        <div class="d-flex justify-content-center align-items-center gap-2 mb-1">
+                            <i class="bi bi-patch-check-fill fs-2"></i>
+                            <h2 class="h3 fw-bold mb-0">Visa Status: Certified</h2>
+                        </div>
+                        <p class="mb-0 text-white-50">The model predicts that this visa application has a high likelihood of approval.</p>
+                    </div>
+                    {% elif outcome == 'Denied' %}
+                    <div class="badge-denied">
+                        <div class="d-flex justify-content-center align-items-center gap-2 mb-1">
+                            <i class="bi bi-x-octagon-fill fs-2"></i>
+                            <h2 class="h3 fw-bold mb-0">Visa Status: Denied</h2>
+                        </div>
+                        <p class="mb-0 text-white-50">The model predicts that this visa application has a high likelihood of rejection.</p>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info rounded-4 p-4 text-center shadow-sm">
+                        <h4 class="fw-bold mb-1">Status: {{ outcome }}</h4>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                <!-- Prediction Form Card -->
+                <div class="main-card">
+                    <form action="/" method="post">
+                        
+                        <!-- Section 1: Applicant Profile -->
+                        <div class="section-title">
+                            <i class="bi bi-person-badge-fill"></i>
+                            <span>1. Applicant Credentials</span>
+                        </div>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label for="continent" class="form-label">Applicant Continent</label>
+                                <select class="form-select" id="continent" name="continent" required>
+                                    <option value="" disabled selected>Select Continent</option>
+                                    <option value="Asia">Asia</option>
+                                    <option value="Europe">Europe</option>
+                                    <option value="North America">North America</option>
+                                    <option value="South America">South America</option>
+                                    <option value="Africa">Africa</option>
+                                    <option value="Oceania">Oceania</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="education_of_employee" class="form-label">Education Level</label>
+                                <select class="form-select" id="education_of_employee" name="education_of_employee" required>
+                                    <option value="" disabled selected>Select Education</option>
+                                    <option value="High School">High School</option>
+                                    <option value="Bachelor's">Bachelor's Degree</option>
+                                    <option value="Master's">Master's Degree</option>
+                                    <option value="Doctorate">Doctorate (Ph.D.)</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="has_job_experience" class="form-label">Relevant Job Experience?</label>
+                                <select class="form-select" id="has_job_experience" name="has_job_experience" required>
+                                    <option value="" disabled selected>Select Yes / No</option>
+                                    <option value="Y">Yes (Experienced)</option>
+                                    <option value="N">No (No prior experience)</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="requires_job_training" class="form-label">Requires Job Training?</label>
+                                <select class="form-select" id="requires_job_training" name="requires_job_training" required>
+                                    <option value="" disabled selected>Select Yes / No</option>
+                                    <option value="Y">Yes</option>
+                                    <option value="N">No</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Section 2: Employer & Job Profile -->
+                        <div class="section-title">
+                            <i class="bi bi-building"></i>
+                            <span>2. Employer & Job Information</span>
+                        </div>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label for="no_of_employees" class="form-label">Total Number of Employees</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-people"></i></span>
+                                    <input type="number" class="form-control" id="no_of_employees" name="no_of_employees" placeholder="e.g. 1500" min="1" required>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="yr_of_estab" class="form-label">Year Company Established</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-calendar-event"></i></span>
+                                    <input type="number" class="form-control" id="yr_of_estab" name="yr_of_estab" placeholder="e.g. 2005" min="1800" max="2026" required>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="region_of_employment" class="form-label">Region of Employment (US)</label>
+                                <select class="form-select" id="region_of_employment" name="region_of_employment" required>
+                                    <option value="" disabled selected>Select Region</option>
+                                    <option value="Northeast">Northeast</option>
+                                    <option value="South">South</option>
+                                    <option value="Midwest">Midwest</option>
+                                    <option value="West">West</option>
+                                    <option value="Island">Island</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="full_time_position" class="form-label">Position Type</label>
+                                <select class="form-select" id="full_time_position" name="full_time_position" required>
+                                    <option value="" disabled selected>Select Position Type</option>
+                                    <option value="Y">Full-Time Position</option>
+                                    <option value="N">Part-Time / Contract</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Section 3: Compensation & Wage -->
+                        <div class="section-title">
+                            <i class="bi bi-currency-dollar"></i>
+                            <span>3. Prevailing Wage & Compensation</span>
+                        </div>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label for="prevailing_wage" class="form-label">Offered / Prevailing Wage</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" step="any" class="form-control" id="prevailing_wage" name="prevailing_wage" placeholder="e.g. 85000.00" min="1" required>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="unit_of_wage" class="form-label">Wage Unit / Frequency</label>
+                                <select class="form-select" id="unit_of_wage" name="unit_of_wage" required>
+                                    <option value="" disabled selected>Select Wage Unit</option>
+                                    <option value="Hour">Per Hour</option>
+                                    <option value="Week">Per Week</option>
+                                    <option value="Month">Per Month</option>
+                                    <option value="Year">Per Year (Annual)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Action Submit Button -->
+                        <div class="mt-4 pt-2">
+                            <button type="submit" class="btn btn-predict" id="predictBtn">
+                                <i class="bi bi-lightning-charge-fill me-2"></i>Predict Visa Status
+                            </button>
+                        </div>
+
+                    </form>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="text-center">
+        <div class="container">
+            <p class="mb-0">
+                US Visa Approval Prediction System &bull; Production MLOps Architecture &bull; Built with FastAPI & Scikit-Learn
+            </p>
+        </div>
+    </footer>
+
+    <!-- Bootstrap Bundle JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Optional: show loading indicator when form is submitted
+        const form = document.querySelector('form');
+        const predictBtn = document.getElementById('predictBtn');
+        form.addEventListener('submit', () => {
+            predictBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Analyzing Visa Application...';
+            predictBtn.disabled = true;
+            form.submit();
+        });
+    </script>
+</body>
+</html>
