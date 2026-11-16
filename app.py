@@ -40,6 +40,21 @@ if os.path.exists("static"):
 templates = Jinja2Templates(directory="templates")
 
 
+def render_template(template_name: str, request: Request, context: Optional[dict] = None) -> Response:
+    """
+    Renders a Jinja2 template ensuring full backward and forward compatibility
+    with all Starlette and FastAPI versions (including older FastAPI <= 0.99.1).
+    """
+    ctx = dict(context) if context else {}
+    ctx["request"] = request
+    try:
+        # Starlette 0.28+ keyword-style call
+        return templates.TemplateResponse(request=request, name=template_name, context=ctx)
+    except TypeError:
+        # Starlette <= 0.27 positional-style call (requires request key inside context)
+        return templates.TemplateResponse(template_name, ctx)
+
+
 # Pydantic schema for programmatic REST API predictions
 class USvisaPredictRequest(BaseModel):
     continent: str = Field(..., example="Asia")
@@ -70,10 +85,10 @@ async def index_get(request: Request):
     """
     Renders the web frontend form for interactive manual predictions.
     """
-    return templates.TemplateResponse(
-        request=request,
-        name="usvisa.html",
-        context={"context": None, "form_data": None, "current_year": CURRENT_YEAR},
+    return render_template(
+        "usvisa.html",
+        request,
+        {"context": None, "form_data": None, "current_year": CURRENT_YEAR},
     )
 
 
@@ -107,10 +122,10 @@ async def index_post(request: Request):
         status_result = predictions[0]
         logging.info(f"Web prediction generated successfully: {status_result}")
 
-        return templates.TemplateResponse(
-            request=request,
-            name="usvisa.html",
-            context={
+        return render_template(
+            "usvisa.html",
+            request,
+            {
                 "context": status_result,
                 "form_data": dict(form),
                 "current_year": CURRENT_YEAR,
@@ -119,10 +134,10 @@ async def index_post(request: Request):
 
     except Exception as e:
         logging.error(f"Error occurred during web prediction: {e}")
-        return templates.TemplateResponse(
-            request=request,
-            name="usvisa.html",
-            context={
+        return render_template(
+            "usvisa.html",
+            request,
+            {
                 "context": f"Error: {str(e)}",
                 "form_data": dict(form) if form else None,
                 "current_year": CURRENT_YEAR,
