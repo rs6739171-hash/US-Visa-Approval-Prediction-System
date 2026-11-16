@@ -2,7 +2,7 @@
 
 An end-to-end, production-grade Machine Learning & MLOps system that predicts whether a US visa application will be **Certified** or **Denied** based on applicant attributes, education, employer profile, job requirements, and prevailing wage statistics.
 
-Built with modular Python architecture, automated artifact tracking, data drift monitoring via Evidently AI, cloud-native storage, and scalable deployment pipelines.
+Built with modular Python architecture, automated artifact tracking, data drift monitoring via Evidently AI, declarative model search using `neuro_mf`, cloud-native storage, and scalable deployment pipelines.
 
 ---
 
@@ -22,7 +22,8 @@ This system automates and streamlines visa classification:
 | Category | Technologies |
 | :--- | :--- |
 | **Language** | Python 3.10 / 3.12 |
-| **Exploration & Modeling** | Jupyter, `scikit-learn`, `xgboost`, `catboost`, `imbalanced-learn` |
+| **Model Selection & Tuning** | `neuro_mf`, `scikit-learn` (`GridSearchCV`) |
+| **Exploration & Class Balancing** | Jupyter, `imbalanced-learn` (`SMOTEENN`), `xgboost`, `catboost` |
 | **Data Processing & Stats** | `pandas`, `numpy`, `scipy` |
 | **Data Drift & Monitoring** | `Evidently AI` |
 | **Cloud Database** | `MongoDB Atlas` (Cloud NoSQL Feature Store) |
@@ -46,23 +47,23 @@ US-Visa-Approval-Prediction-System/
 ├── app.py                            # FastAPI application entrypoint (UI & REST API)
 │
 ├── config/                           # Declarative configurations
-│   ├── model.yaml                    # Model hyperparameters and evaluation thresholds
-│   └── schema.yaml                   # Dataset schema, column types, and target variable
+│   ├── model.yaml                    # Model hyperparameters and GridSearch candidate grids
+│   └── schema.yaml                   # Dataset schema, column types, drop columns, and target
 │
 ├── notebook/                         # Research, EDA, & experiment notebooks
 │   ├── Visadataset.csv               # Raw historical US visa application dataset
 │   ├── EDA_US_visa.ipynb             # Comprehensive exploratory data analysis
-│   ├── Feature_engineering_and_model_traning.ipynb  # Feature preprocessing & model benchmarks
+│   ├── Feature_engineering_and_model_traning.ipynb  # Preprocessing & classifier benchmarks
 │   ├── mongodb_demo.ipynb            # MongoDB Atlas connection & batch upload prototype
 │   └── data_drift_demo_with_evidently.ipynb         # Data drift profiling with Evidently AI
 │
 ├── us_visa/                          # Core application package
 │   ├── components/                   # Modular pipeline execution components
 │   │   ├── __init__.py
-│   │   ├── data_ingestion.py         # Cloud MongoDB fetch + local fallback & train/test split
+│   │   ├── data_ingestion.py         # MongoDB Atlas sync, fallback, & 80:20 train/test split
 │   │   ├── data_validation.py        # Schema validation & Evidently data drift analysis
-│   │   ├── data_transformation.py    # Feature engineering, encoding, scaling & SMOTE
-│   │   ├── model_trainer.py          # Estimator training, tuning, & performance scoring
+│   │   ├── data_transformation.py    # Feature engineering, ColumnTransformer & SMOTEENN
+│   │   ├── model_trainer.py          # neuro_mf GridSearch, model selection & packaging
 │   │   ├── model_evaluation.py       # S3 production model comparison & threshold check
 │   │   └── model_pusher.py           # Pushes validated model artifacts to AWS S3
 │   │
@@ -80,7 +81,8 @@ US-Visa-Approval-Prediction-System/
 │   ├── entity/                       # Strongly typed data contracts
 │   │   ├── __init__.py
 │   │   ├── config_entity.py          # Component configuration dataclasses
-│   │   └── artifact_entity.py        # Component output artifact dataclasses
+│   │   ├── artifact_entity.py        # Component output artifact dataclasses
+│   │   └── estimator.py              # USvisaModel wrapper & TargetValueMapping
 │   │
 │   ├── exception/                    # Custom exception handlers
 │   │   └── __init__.py               # Detailed error tracking with file name & line numbers
@@ -98,11 +100,23 @@ US-Visa-Approval-Prediction-System/
 │
 └── artifact/                         # Generated artifacts (ignored by git, created on run)
     └── <timestamp>/
-        └── data_ingestion/
-            ├── feature_store/usvisa.csv
-            └── ingested/
-                ├── train.csv         # 80% split
-                └── test.csv          # 20% split
+        ├── data_ingestion/
+        │   ├── feature_store/usvisa.csv
+        │   └── ingested/
+        │       ├── train.csv         # 80% split
+        │       └── test.csv          # 20% split
+        ├── data_validation/
+        │   └── drift_report/
+        │       └── report.yaml       # Evidently data drift analysis metrics
+        ├── data_transformation/
+        │   ├── transformed/
+        │   │   ├── train.npy         # Resampled train array
+        │   │   └── test.npy          # Transformed test array
+        │   └── transformed_object/
+        │       └── preprocessing.pkl # Fitted ColumnTransformer pipeline
+        └── model_trainer/
+            └── trained_model/
+                └── model.pkl         # Bundled USvisaModel (preprocessor + best estimator)
 ```
 
 ---
@@ -118,9 +132,20 @@ US-Visa-Approval-Prediction-System/
   - Automated cloud connection to MongoDB Atlas database `US_VISA`, collection `visa_data`.
   - Resilient hybrid fallback mechanism: automatically falls back to local `notebook/Visadataset.csv` if port 27017 is blocked by ISP middleboxes or offline.
   - Automatically exports raw data to `feature_store/usvisa.csv` and partitions into `train.csv` (80%) and `test.csv` (20%) under timestamped artifact folders.
-- [ ] **Data Validation Component:** Schema validation against `config/schema.yaml` and programmatic Evidently data drift report generation.
-- [ ] **Data Transformation Component:** Automated preprocessing pipelines (OneHotEncoder, StandardScaler/PowerTransformer) and SMOTE class balancing.
-- [ ] **Model Training & Tuning:** Multi-model hyperparameter optimization (Random Forest, CatBoost, XGBoost) and evaluation metrics generation.
+- [x] **Data Validation Component:**
+  - Validates total column count, column names, and numeric/categorical data types against `config/schema.yaml`.
+  - Evaluates dataset drift between train and test splits using Evidently AI and writes comprehensive YAML drift reports.
+- [x] **Data Transformation Component:**
+  - Automated feature engineering: derives `company_age = CURRENT_YEAR - yr_of_estab` and drops non-predictive columns (`case_id`, `yr_of_estab`).
+  - Implements multi-stage preprocessing via `ColumnTransformer` (`OneHotEncoder`, `StandardScaler`, `OrdinalEncoder`, `PowerTransformer`).
+  - Addresses target class imbalance using **SMOTEENN** (combined oversampling and edited nearest-neighbors undersampling).
+  - Serializes fitted preprocessor to `preprocessing.pkl` and transformed datasets to `train.npy` and `test.npy`.
+- [x] **Model Training & Tuning (`neuro_mf`):**
+  - Fully declarative configuration in `config/model.yaml` defining models (`KNeighborsClassifier`, `RandomForestClassifier`) and hyperparameter grids.
+  - Automated Grid Search with 3-fold cross-validation orchestrated via `neuro_mf.ModelFactory`.
+  - Automated champion selection based on expected accuracy threshold (`expected_accuracy: 0.6`).
+  - Bundles the fitted preprocessor and trained estimator into a unified `USvisaModel` object saved to `model.pkl`.
+  - Computes test evaluation metrics (`F1 Score`, `Precision`, `Recall`).
 - [ ] **Model Evaluation & Production Pusher:** AWS S3 production model challenger-champion comparison and automated registry update.
 - [ ] **Web Application & Deployment:** FastAPI web interface, Dockerization, and AWS ECR/EC2 CI/CD automation via GitHub Actions.
 
@@ -171,20 +196,92 @@ AWS_DEFAULT_REGION="us-east-1"
 
 ## 🏃 Running the Pipeline
 
-### Trigger Data Ingestion & Pipeline Run
+### Execute Full Training Pipeline
 
-To execute the training pipeline and generate ingestion artifacts:
+To run the automated training pipeline across all implemented components:
 
 ```bash
 python demo.py
 ```
 
-Upon execution, check the generated artifacts in `artifact/<timestamp>/data_ingestion/`:
-* `feature_store/usvisa.csv`: Full exported dataset.
-* `ingested/train.csv`: Training split (80% of data).
-* `ingested/test.csv`: Testing split (20% of data).
+### Pipeline Execution Flow & Artifact Outputs
 
-Execution logs will be recorded in both the terminal and the timestamped `logs/` directory.
+When `demo.py` is executed, `TrainPipeline` orchestrates the following stages sequentially:
+
+```mermaid
+flowchart TD
+    A["MongoDB Atlas / Local Fallback"] --> B["Data Ingestion"]
+    B -->|"train.csv & test.csv"| C["Data Validation"]
+    C -->|"Schema Verified & Drift Checked"| D["Data Transformation"]
+    D -->|"train.npy, test.npy & preprocessing.pkl"| E["Model Trainer (neuro_mf)"]
+    E -->|"GridSearch (KNeighbors, RandomForest)"| F["Champion Selection"]
+    F -->|"USvisaModel Package"| G["model.pkl & Metrics Artifact"]
+```
+
+1. **Data Ingestion:**
+   - Fetches dataset from MongoDB Atlas.
+   - Saves `artifact/<timestamp>/data_ingestion/feature_store/usvisa.csv`.
+   - Generates 80:20 split: `train.csv` and `test.csv`.
+
+2. **Data Validation:**
+   - Verifies schema against `config/schema.yaml`.
+   - Evaluates statistical drift using Evidently AI.
+   - Saves `artifact/<timestamp>/data_validation/drift_report/report.yaml`.
+
+3. **Data Transformation:**
+   - Engineers `company_age` and drops unwanted columns.
+   - Encodes and transforms features via `ColumnTransformer`.
+   - Balances minority class on training data with `SMOTEENN`.
+   - Saves `train.npy`, `test.npy`, and `preprocessing.pkl`.
+
+4. **Model Trainer (`neuro_mf`):**
+   - Parses `config/model.yaml` and initializes candidate classifiers.
+   - Runs cross-validated grid search across hyperparameter combinations.
+   - Validates that the best model exceeds the expected accuracy threshold (`>= 0.6`).
+   - Packages the preprocessor and trained estimator into `USvisaModel`.
+   - Saves deployable pipeline artifact to `artifact/<timestamp>/model_trainer/trained_model/model.pkl`.
+
+Execution logs are streamed to the console and saved under timestamped files in the `logs/` directory.
+
+---
+
+## ⚙️ Declarative Model Configuration (`config/model.yaml`)
+
+Candidate models and their tuning hyperparameter search spaces are fully decoupled from the code:
+
+```yaml
+grid_search:
+  class: GridSearchCV
+  module: sklearn.model_selection
+  params:
+    cv: 3
+    verbose: 3
+
+model_selection:
+  module_0:
+    class: KNeighborsClassifier
+    module: sklearn.neighbors
+    params:
+      algorithm: kd_tree
+      weights: uniform
+      n_neighbors: 3
+    search_param_grid:
+      algorithm: [auto, ball_tree, kd_tree, brute]
+      weights: [uniform, distance]
+      n_neighbors: [3, 5, 9]
+
+  module_1:
+    class: RandomForestClassifier
+    module: sklearn.ensemble
+    params:
+      max_depth: 10
+      max_features: sqrt
+      n_estimators: 3
+    search_param_grid:
+      max_depth: [10, 15, 20]
+      max_features: [sqrt, log2]
+      n_estimators: [3, 5, 9]
+```
 
 ---
 
@@ -194,6 +291,9 @@ Execution logs will be recorded in both the terminal and the timestamped `logs/`
 Certain Indian ISPs (e.g., GTPL Hathway, ACT, Excitel) run deep packet inspection (DPI) on non-HTTP TLS traffic on port 27017, triggering an OpenSSL `TLSV1_ALERT_INTERNAL_ERROR`.
 * **Built-in Workaround:** `DataIngestion` automatically detects connection drops and seamlessly falls back to `notebook/Visadataset.csv`, allowing pipeline development to continue unblocked.
 * **Direct Cloud Fix:** Connect via a mobile hotspot (Jio / Airtel) or activate Cloudflare WARP (1.1.1.1) to bypass local ISP port filtering.
+
+### Scikit-Learn Pipeline Serialization
+The final saved model in `model.pkl` is an instance of `USvisaModel`, which encapsulates both the fitted `preprocessing_object` and `trained_model_object`. Raw production records can be passed directly to `model.predict(dataframe)` once feature-engineered.
 
 ---
 
