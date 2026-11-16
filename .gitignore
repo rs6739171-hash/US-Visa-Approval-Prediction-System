@@ -224,7 +224,7 @@ __marimo__/
 # ==============================================================================
 
 # Pipeline Execution Artifacts & Feature Store
-artifact/
+artifact/*/
 artifacts/
 
 # Application & Pipeline Logs
@@ -233,6 +233,7 @@ logs/
 
 # Serialized Model Objects & Preprocessors
 *.pkl
+!artifact/model.pkl
 *.dill
 *.joblib
 *.h5
@@ -275,4 +276,6 @@ override.tf.json
 terraform.rc
 
 
-artifact/*
+# Explicitly allow bundled production model for containerized deployment
+!artifact/model.pkl
+

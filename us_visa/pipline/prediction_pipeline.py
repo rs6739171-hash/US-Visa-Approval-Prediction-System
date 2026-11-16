@@ -145,18 +145,27 @@ class USvisaClassifier:
         """Loads model from local artifact storage or from AWS S3."""
         model = None
         # 1. Local artifact check
+        base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+        root_model_path = os.path.join(base_dir, "artifact", "model.pkl")
         local_model_path = os.path.join("artifact", "model.pkl")
-        if not os.path.exists(local_model_path):
-            import glob
-            candidates = glob.glob(
-                os.path.join("artifact", "*", "model_trainer", "trained_model", "model.pkl")
-            )
-            if candidates:
-                local_model_path = candidates[-1]
 
         if os.path.exists(local_model_path):
             logging.info(f"Loading local model from {local_model_path}")
             return load_object(local_model_path)
+
+        if os.path.exists(root_model_path):
+            logging.info(f"Loading local model from {root_model_path}")
+            return load_object(root_model_path)
+
+        import glob
+        candidates = glob.glob(
+            os.path.join("artifact", "*", "model_trainer", "trained_model", "model.pkl")
+        ) or glob.glob(
+            os.path.join(base_dir, "artifact", "*", "model_trainer", "trained_model", "model.pkl")
+        )
+        if candidates:
+            logging.info(f"Loading local candidate model from {candidates[-1]}")
+            return load_object(candidates[-1])
 
         # 2. Attempt loading model from S3 using USvisaEstimator
         try:
