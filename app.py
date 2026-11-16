@@ -20,7 +20,7 @@ from us_visa.pipline.training_pipeline import TrainPipeline
 app = FastAPI(
     title="US Visa Approval Prediction System",
     description="Production-grade Machine Learning API & Web Interface for predicting US visa approval statuses.",
-    version="1.0.0",
+    version="1.0.1",
 )
 
 # Enable CORS for external frontends or integrations
