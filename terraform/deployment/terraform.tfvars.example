@@ -1,0 +1,19 @@
+# ==============================================================================
+# Example Terraform Variables Configuration (terraform.tfvars)
+# Copy this file to terraform.tfvars and customize the values as needed.
+# ==============================================================================
+
+aws_region          = "ap-south-1"
+project_name        = "us-visa-approval"
+environment         = "production"
+ecr_repository_name = "us-visa-approval-app"
+
+# EC2 Instance Settings
+instance_type       = "t2.medium"     # 2 vCPUs, 4GB RAM (sufficient for Scikit-Learn inference + FastAPI)
+root_volume_size    = 30              # 30 GB gp3 SSD storage
+app_port            = 8080            # FastAPI listening port
+
+# Network & Access Control
+key_name            = ""              # (Optional) Name of your AWS EC2 Key Pair (e.g., "my-mumbai-key")
+ssh_allowed_cidr    = "0.0.0.0/0"     # Recommend setting to your public IP (e.g. "203.0.113.25/32")
+custom_ami_id       = ""              # Leave empty to automatically use latest Ubuntu 22.04 LTS
