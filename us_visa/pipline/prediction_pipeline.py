@@ -73,7 +73,13 @@ class USvisaData:
             # Auto-calculate company_age if not provided
             if "company_age" not in df.columns or df["company_age"].iloc[0] is None:
                 if self.yr_of_estab is not None:
-                    df["company_age"] = CURRENT_YEAR - int(self.yr_of_estab)
+                    yr = int(self.yr_of_estab)
+                    # If user enters a small value (<= 150), treat it directly as company age in years (e.g. 22 -> 22 yrs)
+                    # Otherwise, if it's a calendar year (e.g. 1995, 2005), calculate CURRENT_YEAR - yr
+                    if yr <= 150:
+                        df["company_age"] = max(0, yr)
+                    else:
+                        df["company_age"] = max(0, CURRENT_YEAR - yr)
                 else:
                     raise Exception("Either yr_of_estab or company_age must be provided.")
 
@@ -116,6 +122,7 @@ class USvisaClassifier:
     Class responsible for loading the trained model (from AWS S3 bucket
     or local fallback) and generating prediction labels ('Certified' / 'Denied').
     """
+    _cached_model = None
 
     def __init__(
         self,
@@ -129,6 +136,42 @@ class USvisaClassifier:
         except Exception as e:
             raise USvisaException(e, sys) from e
 
+    @classmethod
+    def invalidate_cache(cls):
+        """Invalidates in-memory cached model so freshly trained model is loaded."""
+        cls._cached_model = None
+
+    def get_model(self):
+        """Loads model from local artifact storage or from AWS S3."""
+        model = None
+        # 1. Local artifact check
+        local_model_path = os.path.join("artifact", "model.pkl")
+        if not os.path.exists(local_model_path):
+            import glob
+            candidates = glob.glob(
+                os.path.join("artifact", "*", "model_trainer", "trained_model", "model.pkl")
+            )
+            if candidates:
+                local_model_path = candidates[-1]
+
+        if os.path.exists(local_model_path):
+            logging.info(f"Loading local model from {local_model_path}")
+            return load_object(local_model_path)
+
+        # 2. Attempt loading model from S3 using USvisaEstimator
+        try:
+            usvisa_estimator = USvisaEstimator(
+                bucket_name=self.prediction_pipeline_config.model_bucket_name,
+                model_path=self.prediction_pipeline_config.model_file_path,
+            )
+            if usvisa_estimator.is_model_present():
+                logging.info("Production model successfully located in S3 bucket")
+                return usvisa_estimator
+        except Exception as e:
+            logging.info(f"Could not load model from S3: {e}")
+
+        raise Exception("Model not found in local artifact directory or AWS S3 bucket.")
+
     def predict(self, dataframe: DataFrame) -> np.ndarray:
         """
         Runs model prediction on the given DataFrame.
@@ -138,35 +181,10 @@ class USvisaClassifier:
         """
         try:
             logging.info("Entered predict method of USvisaClassifier class")
-            model = None
+            if USvisaClassifier._cached_model is None:
+                USvisaClassifier._cached_model = self.get_model()
 
-            # 1. Attempt loading model from S3 using USvisaEstimator
-            try:
-                usvisa_estimator = USvisaEstimator(
-                    bucket_name=self.prediction_pipeline_config.model_bucket_name,
-                    model_path=self.prediction_pipeline_config.model_file_path,
-                )
-                if usvisa_estimator.is_model_present():
-                    logging.info("Production model successfully located in S3 bucket")
-                    model = usvisa_estimator
-            except Exception as e:
-                logging.info(f"Could not load model from S3, falling back to local model: {e}")
-                model = None
-
-            # 2. Local fallback if model is not available from S3
-            if model is None:
-                local_model_path = os.path.join("artifact", "model.pkl")
-                if not os.path.exists(local_model_path):
-                    import glob
-                    candidates = glob.glob(
-                        os.path.join("artifact", "*", "model_trainer", "trained_model", "model.pkl")
-                    )
-                    if candidates:
-                        local_model_path = candidates[-1]
-
-                logging.info(f"Loading local model from {local_model_path}")
-                model = load_object(local_model_path)
-
+            model = USvisaClassifier._cached_model
             predictions = model.predict(dataframe)
 
             # Map predictions: 0 -> Certified, 1 -> Denied

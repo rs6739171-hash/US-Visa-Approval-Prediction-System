@@ -25,6 +25,9 @@
                 <span>US Visa Approval Prediction</span>
             </a>
             <div class="d-flex align-items-center gap-3">
+                <a href="/docs" target="_blank" class="btn btn-outline-light btn-sm rounded-pill px-3 fw-semibold">
+                    <i class="bi bi-file-code-fill me-1"></i> API Docs (Swagger)
+                </a>
                 <a href="/train" class="btn btn-outline-light btn-sm rounded-pill px-3 fw-semibold">
                     <i class="bi bi-gear-fill me-1"></i> Retrain Pipeline
                 </a>
@@ -77,8 +80,24 @@
 
                 <!-- Prediction Form Card -->
                 <div class="main-card">
-                    <form action="/" method="post">
+                    <form action="/" method="post" id="predictionForm">
                         
+                        <!-- Quick Profile Presets -->
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4 p-3 rounded-3 bg-light border">
+                            <span class="small fw-bold text-secondary"><i class="bi bi-magic me-1"></i> Quick Presets:</span>
+                            <div class="d-flex flex-wrap gap-2">
+                                <button type="button" class="btn btn-outline-success btn-sm rounded-pill px-3" onclick="fillSample('certified')">
+                                    <i class="bi bi-check-circle-fill me-1"></i> Strong Profile (Certified)
+                                </button>
+                                <button type="button" class="btn btn-outline-danger btn-sm rounded-pill px-3" onclick="fillSample('denied')">
+                                    <i class="bi bi-x-circle-fill me-1"></i> Weak Profile (Denied)
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" onclick="resetForm()">
+                                    <i class="bi bi-arrow-counterclockwise me-1"></i> Clear Form
+                                </button>
+                            </div>
+                        </div>
+
                         <!-- Section 1: Applicant Profile -->
                         <div class="section-title">
                             <i class="bi bi-person-badge-fill"></i>
@@ -88,42 +107,42 @@
                             <div class="col-md-6">
                                 <label for="continent" class="form-label">Applicant Continent</label>
                                 <select class="form-select" id="continent" name="continent" required>
-                                    <option value="" disabled selected>Select Continent</option>
-                                    <option value="Asia">Asia</option>
-                                    <option value="Europe">Europe</option>
-                                    <option value="North America">North America</option>
-                                    <option value="South America">South America</option>
-                                    <option value="Africa">Africa</option>
-                                    <option value="Oceania">Oceania</option>
+                                    <option value="" disabled {% if not form_data or not form_data.continent %}selected{% endif %}>Select Continent</option>
+                                    <option value="Asia" {% if form_data and form_data.continent == 'Asia' %}selected{% endif %}>Asia</option>
+                                    <option value="Europe" {% if form_data and form_data.continent == 'Europe' %}selected{% endif %}>Europe</option>
+                                    <option value="North America" {% if form_data and form_data.continent == 'North America' %}selected{% endif %}>North America</option>
+                                    <option value="South America" {% if form_data and form_data.continent == 'South America' %}selected{% endif %}>South America</option>
+                                    <option value="Africa" {% if form_data and form_data.continent == 'Africa' %}selected{% endif %}>Africa</option>
+                                    <option value="Oceania" {% if form_data and form_data.continent == 'Oceania' %}selected{% endif %}>Oceania</option>
                                 </select>
                             </div>
 
                             <div class="col-md-6">
                                 <label for="education_of_employee" class="form-label">Education Level</label>
                                 <select class="form-select" id="education_of_employee" name="education_of_employee" required>
-                                    <option value="" disabled selected>Select Education</option>
-                                    <option value="High School">High School</option>
-                                    <option value="Bachelor's">Bachelor's Degree</option>
-                                    <option value="Master's">Master's Degree</option>
-                                    <option value="Doctorate">Doctorate (Ph.D.)</option>
+                                    <option value="" disabled {% if not form_data or not form_data.education_of_employee %}selected{% endif %}>Select Education</option>
+                                    <option value="High School" {% if form_data and form_data.education_of_employee == 'High School' %}selected{% endif %}>High School</option>
+                                    <option value="Bachelor's" {% if form_data and form_data.education_of_employee == "Bachelor's" %}selected{% endif %}>Bachelor's Degree</option>
+                                    <option value="Master's" {% if form_data and form_data.education_of_employee == "Master's" %}selected{% endif %}>Master's Degree</option>
+                                    <option value="Doctorate" {% if form_data and form_data.education_of_employee == 'Doctorate' %}selected{% endif %}>Doctorate (Ph.D.)</option>
                                 </select>
                             </div>
 
                             <div class="col-md-6">
                                 <label for="has_job_experience" class="form-label">Relevant Job Experience?</label>
                                 <select class="form-select" id="has_job_experience" name="has_job_experience" required>
-                                    <option value="" disabled selected>Select Yes / No</option>
-                                    <option value="Y">Yes (Experienced)</option>
-                                    <option value="N">No (No prior experience)</option>
+                                    <option value="" disabled {% if not form_data or not form_data.has_job_experience %}selected{% endif %}>Select Yes / No</option>
+                                    <option value="Y" {% if form_data and form_data.has_job_experience == 'Y' %}selected{% endif %}>Yes (Experienced)</option>
+                                    <option value="N" {% if form_data and form_data.has_job_experience == 'N' %}selected{% endif %}>No (No prior experience)</option>
                                 </select>
                             </div>
 
                             <div class="col-md-6">
                                 <label for="requires_job_training" class="form-label">Requires Job Training?</label>
                                 <select class="form-select" id="requires_job_training" name="requires_job_training" required>
-                                    <option value="" disabled selected>Select Yes / No</option>
-                                    <option value="Y">Yes</option>
-                                    <option value="N">No</option>
+                                    <option value="" disabled {% if not form_data or not form_data.requires_job_training %}selected{% endif %}>Select Yes / No</option>
+                                    <option value="Y" {% if form_data and form_data.requires_job_training == 'Y' %}selected{% endif %}>Yes</option>
+                                    <option value="N" {% if form_data and form_data.requires_job_training == 'N' %}selected{% endif %}>No</option>
                                 </select>
                             </div>
                         </div>
@@ -138,36 +157,36 @@
                                 <label for="no_of_employees" class="form-label">Total Number of Employees</label>
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="bi bi-people"></i></span>
-                                    <input type="number" class="form-control" id="no_of_employees" name="no_of_employees" placeholder="e.g. 1500" min="1" required>
+                                    <input type="number" class="form-control" id="no_of_employees" name="no_of_employees" placeholder="e.g. 1500" min="1" value="{{ form_data.no_of_employees if form_data and form_data.no_of_employees is defined else '' }}" required>
                                 </div>
                             </div>
 
                             <div class="col-md-6">
-                                <label for="yr_of_estab" class="form-label">Year Company Established</label>
+                                <label for="yr_of_estab" class="form-label">Year Company Established <span class="text-muted fw-normal">(or Age in Years)</span></label>
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="bi bi-calendar-event"></i></span>
-                                    <input type="number" class="form-control" id="yr_of_estab" name="yr_of_estab" placeholder="e.g. 2005" min="1800" max="2026" required>
+                                    <input type="number" class="form-control" id="yr_of_estab" name="yr_of_estab" placeholder="e.g. 2005 or 22" min="0" max="{{ current_year if current_year else 2026 }}" value="{{ form_data.yr_of_estab if form_data and form_data.yr_of_estab is defined else '' }}" required>
                                 </div>
                             </div>
 
                             <div class="col-md-6">
                                 <label for="region_of_employment" class="form-label">Region of Employment (US)</label>
                                 <select class="form-select" id="region_of_employment" name="region_of_employment" required>
-                                    <option value="" disabled selected>Select Region</option>
-                                    <option value="Northeast">Northeast</option>
-                                    <option value="South">South</option>
-                                    <option value="Midwest">Midwest</option>
-                                    <option value="West">West</option>
-                                    <option value="Island">Island</option>
+                                    <option value="" disabled {% if not form_data or not form_data.region_of_employment %}selected{% endif %}>Select Region</option>
+                                    <option value="Northeast" {% if form_data and form_data.region_of_employment == 'Northeast' %}selected{% endif %}>Northeast</option>
+                                    <option value="South" {% if form_data and form_data.region_of_employment == 'South' %}selected{% endif %}>South</option>
+                                    <option value="Midwest" {% if form_data and form_data.region_of_employment == 'Midwest' %}selected{% endif %}>Midwest</option>
+                                    <option value="West" {% if form_data and form_data.region_of_employment == 'West' %}selected{% endif %}>West</option>
+                                    <option value="Island" {% if form_data and form_data.region_of_employment == 'Island' %}selected{% endif %}>Island</option>
                                 </select>
                             </div>
 
                             <div class="col-md-6">
                                 <label for="full_time_position" class="form-label">Position Type</label>
                                 <select class="form-select" id="full_time_position" name="full_time_position" required>
-                                    <option value="" disabled selected>Select Position Type</option>
-                                    <option value="Y">Full-Time Position</option>
-                                    <option value="N">Part-Time / Contract</option>
+                                    <option value="" disabled {% if not form_data or not form_data.full_time_position %}selected{% endif %}>Select Position Type</option>
+                                    <option value="Y" {% if form_data and form_data.full_time_position == 'Y' %}selected{% endif %}>Full-Time Position</option>
+                                    <option value="N" {% if form_data and form_data.full_time_position == 'N' %}selected{% endif %}>Part-Time / Contract</option>
                                 </select>
                             </div>
                         </div>
@@ -182,18 +201,18 @@
                                 <label for="prevailing_wage" class="form-label">Offered / Prevailing Wage</label>
                                 <div class="input-group">
                                     <span class="input-group-text">$</span>
-                                    <input type="number" step="any" class="form-control" id="prevailing_wage" name="prevailing_wage" placeholder="e.g. 85000.00" min="1" required>
+                                    <input type="number" step="any" class="form-control" id="prevailing_wage" name="prevailing_wage" placeholder="e.g. 85000.00" min="1" value="{{ form_data.prevailing_wage if form_data and form_data.prevailing_wage is defined else '' }}" required>
                                 </div>
                             </div>
 
                             <div class="col-md-6">
                                 <label for="unit_of_wage" class="form-label">Wage Unit / Frequency</label>
                                 <select class="form-select" id="unit_of_wage" name="unit_of_wage" required>
-                                    <option value="" disabled selected>Select Wage Unit</option>
-                                    <option value="Hour">Per Hour</option>
-                                    <option value="Week">Per Week</option>
-                                    <option value="Month">Per Month</option>
-                                    <option value="Year">Per Year (Annual)</option>
+                                    <option value="" disabled {% if not form_data or not form_data.unit_of_wage %}selected{% endif %}>Select Wage Unit</option>
+                                    <option value="Hour" {% if form_data and form_data.unit_of_wage == 'Hour' %}selected{% endif %}>Per Hour</option>
+                                    <option value="Week" {% if form_data and form_data.unit_of_wage == 'Week' %}selected{% endif %}>Per Week</option>
+                                    <option value="Month" {% if form_data and form_data.unit_of_wage == 'Month' %}selected{% endif %}>Per Month</option>
+                                    <option value="Year" {% if form_data and form_data.unit_of_wage == 'Year' %}selected{% endif %}>Per Year (Annual)</option>
                                 </select>
                             </div>
                         </div>
@@ -224,13 +243,44 @@
     <!-- Bootstrap Bundle JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Optional: show loading indicator when form is submitted
-        const form = document.querySelector('form');
+        function fillSample(type) {
+            if (type === 'certified') {
+                document.getElementById('continent').value = 'South America';
+                document.getElementById('education_of_employee').value = 'Doctorate';
+                document.getElementById('has_job_experience').value = 'N';
+                document.getElementById('requires_job_training').value = 'N';
+                document.getElementById('no_of_employees').value = '1221';
+                document.getElementById('yr_of_estab').value = '1980';
+                document.getElementById('region_of_employment').value = 'South';
+                document.getElementById('full_time_position').value = 'Y';
+                document.getElementById('prevailing_wage').value = '31374.88';
+                document.getElementById('unit_of_wage').value = 'Year';
+            } else if (type === 'denied') {
+                document.getElementById('continent').value = 'North America';
+                document.getElementById('education_of_employee').value = "Bachelor's";
+                document.getElementById('has_job_experience').value = 'N';
+                document.getElementById('requires_job_training').value = 'N';
+                document.getElementById('no_of_employees').value = '2479';
+                document.getElementById('yr_of_estab').value = '1978';
+                document.getElementById('region_of_employment').value = 'West';
+                document.getElementById('full_time_position').value = 'Y';
+                document.getElementById('prevailing_wage').value = '108.04';
+                document.getElementById('unit_of_wage').value = 'Hour';
+            }
+        }
+
+        function resetForm() {
+            document.getElementById('predictionForm').reset();
+        }
+
+        // Show loading indicator when form is submitted
+        const form = document.getElementById('predictionForm');
         const predictBtn = document.getElementById('predictBtn');
-        form.addEventListener('submit', () => {
-            predictBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Analyzing Visa Application...';
-            predictBtn.disabled = true;
-            form.submit();
+        form.addEventListener('submit', (e) => {
+            if (form.checkValidity()) {
+                predictBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Analyzing Visa Application...';
+                predictBtn.disabled = true;
+            }
         });
     </script>
 </body>

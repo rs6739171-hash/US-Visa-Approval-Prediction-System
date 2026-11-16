@@ -36,6 +36,17 @@ class TestPredictionPipeline(unittest.TestCase):
         self.assertEqual(df["company_age"].iloc[0], CURRENT_YEAR - 2007)
         self.assertEqual(df["continent"].iloc[0], "Asia")
 
+    def test_usvisa_data_creation_with_small_number_as_company_age(self):
+        """Test USvisaData handles small numbers like 22 as direct company age"""
+        payload = self.sample_payload.copy()
+        payload["yr_of_estab"] = 22
+
+        visa_data = USvisaData(**payload)
+        df = visa_data.get_usvisa_input_data_frame()
+
+        self.assertEqual(df["company_age"].iloc[0], 22)
+        self.assertNotIn("yr_of_estab", df.columns)
+
     def test_usvisa_data_creation_with_direct_company_age(self):
         """Test USvisaData when company_age is directly supplied"""
         payload = self.sample_payload.copy()

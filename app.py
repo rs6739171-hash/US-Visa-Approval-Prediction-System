@@ -9,7 +9,7 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
 import uvicorn
 
-from us_visa.constants import APP_HOST, APP_PORT
+from us_visa.constants import APP_HOST, APP_PORT, CURRENT_YEAR
 from us_visa.exception import USvisaException
 from us_visa.logger import logging
 from us_visa.pipline.prediction_pipeline import USvisaData, USvisaClassifier
@@ -73,7 +73,7 @@ async def index_get(request: Request):
     return templates.TemplateResponse(
         request=request,
         name="usvisa.html",
-        context={"context": None},
+        context={"context": None, "form_data": None, "current_year": CURRENT_YEAR},
     )
 
 
@@ -83,6 +83,7 @@ async def index_post(request: Request):
     Handles form submission from the web interface, runs prediction,
     and returns the rendered HTML page with prediction result.
     """
+    form = None
     try:
         form = await request.form()
 
@@ -109,7 +110,11 @@ async def index_post(request: Request):
         return templates.TemplateResponse(
             request=request,
             name="usvisa.html",
-            context={"context": status_result},
+            context={
+                "context": status_result,
+                "form_data": dict(form),
+                "current_year": CURRENT_YEAR,
+            },
         )
 
     except Exception as e:
@@ -117,7 +122,11 @@ async def index_post(request: Request):
         return templates.TemplateResponse(
             request=request,
             name="usvisa.html",
-            context={"context": f"Error: {str(e)}"},
+            context={
+                "context": f"Error: {str(e)}",
+                "form_data": dict(form) if form else None,
+                "current_year": CURRENT_YEAR,
+            },
         )
 
 
@@ -171,6 +180,7 @@ async def train_pipeline_trigger():
         logging.info("Training pipeline triggered via /train endpoint")
         train_pipeline = TrainPipeline()
         train_pipeline.run_pipeline()
+        USvisaClassifier.invalidate_cache()
         return Response(content="Training pipeline executed successfully!", media_type="text/plain")
     except Exception as e:
         logging.error(f"Error executing training pipeline: {e}")

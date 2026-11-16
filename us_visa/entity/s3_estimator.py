@@ -2,6 +2,7 @@ import os
 import sys
 import dill
 import boto3
+from botocore.config import Config
 from botocore.exceptions import ClientError
 from pandas import DataFrame
 
@@ -43,11 +44,13 @@ class USvisaEstimator:
             secret_key = os.getenv(AWS_SECRET_ACCESS_KEY_ENV_KEY)
             region = os.getenv("AWS_DEFAULT_REGION", self.region_name)
 
+            config = Config(connect_timeout=2, read_timeout=2, retries={"max_attempts": 1})
             self._s3_client = boto3.client(
                 "s3",
                 aws_access_key_id=access_key,
                 aws_secret_access_key=secret_key,
                 region_name=region,
+                config=config,
             )
         return self._s3_client
 
