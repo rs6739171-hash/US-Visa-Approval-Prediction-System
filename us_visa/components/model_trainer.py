@@ -1,3 +1,4 @@
+import os
 import sys
 from typing import Tuple
 
@@ -97,6 +98,10 @@ class ModelTrainer:
             logging.info("Created USvisaModel object with preprocessor and trained model")
             logging.info(f"Saving model at path: {self.model_trainer_config.trained_model_file_path}")
             save_object(self.model_trainer_config.trained_model_file_path, usvisa_model)
+
+            # Persist a predictable copy at artifact/model.pkl for Terraform and deployment
+            os.makedirs("artifact", exist_ok=True)
+            save_object(os.path.join("artifact", "model.pkl"), usvisa_model)
 
             model_trainer_artifact = ModelTrainerArtifact(
                 trained_model_file_path=self.model_trainer_config.trained_model_file_path,
